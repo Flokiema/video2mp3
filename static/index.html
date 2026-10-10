@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video → MP3</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+         background: #0f1117; color: #e8eaf0; min-height: 100vh; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
+  h1 { font-size: 2rem; text-align: center; margin-bottom: 6px; }
+  .sub { text-align: center; color: #9aa0b4; margin-bottom: 28px; font-size: .95rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab { flex: 1; padding: 12px; border: 1px solid #2a2f3f; background: #171b26;
+         color: #cfd4e3; border-radius: 12px; cursor: pointer; font-size: 1rem; }
+  .tab.active { background: #2b6cb0; border-color: #2b6cb0; color: #fff; font-weight: 600; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: #171b26; border: 1px solid #2a2f3f; border-radius: 14px; padding: 22px; }
+  input[type=text] { width: 100%; padding: 14px 16px; border-radius: 10px;
+    border: 1px solid #2a2f3f; background: #0f1117; color: #fff; font-size: 1rem; }
+  input[type=text]:focus { outline: none; border-color: #2b6cb0; }
+  button.primary { width: 100%; margin-top: 14px; padding: 14px; border: none; border-radius: 10px;
+    background: #2b6cb0; color: #fff; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
+  button.primary:hover { background: #2c7cc4; }
+  button.primary:disabled { background: #3a4156; cursor: default; }
+  .drop { border: 2px dashed #3a4156; border-radius: 12px; padding: 46px 20px; text-align: center;
+          cursor: pointer; color: #9aa0b4; transition: .15s; }
+  .drop:hover, .drop.over { border-color: #2b6cb0; color: #fff; background: #1a2030; }
+  .drop .big { font-size: 2.4rem; margin-bottom: 8px; }
+  #job { display: none; margin-top: 20px; }
+  .bar { height: 12px; background: #0f1117; border-radius: 8px; overflow: hidden; margin-top: 12px; }
+  .bar > div { height: 100%; width: 0%; background: linear-gradient(90deg, #2b6cb0, #63b3ed);
+               border-radius: 8px; transition: width .3s; }
+  #jobMsg { margin-top: 10px; color: #9aa0b4; font-size: .95rem; }
+  #jobErr { margin-top: 10px; color: #fc8181; font-size: .95rem; display: none; }
+  #jobDone { display: none; margin-top: 14px; }
+  #jobDone a { display: inline-block; padding: 12px 22px; background: #38a169; color: #fff;
+               border-radius: 10px; text-decoration: none; font-weight: 600; }
+  h2.lib { margin: 34px 0 14px; font-size: 1.25rem; }
+  .file { display: flex; align-items: center; gap: 10px; background: #171b26;
+          border: 1px solid #2a2f3f; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .file .meta { flex: 1; min-width: 0; }
+  .file .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file .info { color: #9aa0b4; font-size: .82rem; margin-top: 2px; }
+  .icon-btn { border: none; background: #242a3d; color: #fff; width: 40px; height: 40px;
+              border-radius: 10px; cursor: pointer; font-size: 1.1rem; flex-shrink: 0; }
+  .icon-btn:hover { background: #2f3650; }
+  .icon-btn.danger:hover { background: #742a2a; }
+  .empty { color: #6b7288; text-align: center; padding: 20px; font-size: .95rem; }
+  audio { width: 100%; margin-top: 12px; display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎵 Video → MP3</h1>
+  <p class="sub">Dán link video hoặc tải file lên — web tự tải về, chuyển thành MP3 và lưu sẵn để bạn tải xuống.</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="link">🔗 Từ link video</button>
+    <button class="tab" data-tab="upload">📁 Tải file lên</button>
+  </div>
+
+  <div class="panel active" id="panel-link">
+    <div class="card">
+      <input type="text" id="urlInput" placeholder="Dán link video vào đây (YouTube, TikTok, Facebook, link mp4 trực tiếp...)">
+      <button class="primary" id="urlBtn">⬇ Tải &amp; chuyển thành MP3</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-upload">
+    <div class="card">
+      <div class="drop" id="drop">
+        <div class="big">📂</div>
+        <div>Kéo thả file video vào đây<br>hoặc bấm để chọn file</div>
+        <input type="file" id="fileInput" accept="video/*,audio/*" style="display:none">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="job">
+    <div id="jobTitle" style="font-weight:600"></div>
+    <div class="bar"><div id="jobBar"></div></div>
+    <div id="jobMsg"></div>
+    <div id="jobErr"></div>
+    <div id="jobDone"><a id="jobDl" href="#" download>⬇ Tải file MP3</a></div>
+    <audio id="preview" controls></audio>
+  </div>
+
+  <h2 class="lib">📚 Thư viện MP3</h2>
+  <div id="files"></div>
+
+  <h2 class="lib" style="margin-top:24px">🍪 Cookies YouTube <span id="ckStatus" style="font-size:13px;color:#888"></span></h2>
+  <div style="background:#1a1d29;border:1px solid #2a2e42;border-radius:12px;padding:16px;font-size:14px;line-height:1.7">
+    <div id="ckGuide">
+      YouTube chặn server tải video (báo lỗi "not a bot"). Để sửa:<br>
+      1️⃣ Cài extension <b>"Get cookies.txt LOCALLY"</b> trên Chrome<br>
+      2️⃣ Mở <b>youtube.com</b> (đăng nhập rồi càng tốt) → bấm icon extension → <b>Export</b> → được file <b>cookies.txt</b><br>
+      3️⃣ Upload file đó ở dưới 👇 (chỉ cần làm 1 lần, cookies dùng được vài tuần)
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="file" id="ckFile" accept=".txt" style="display:none" onchange="uploadCookies()">
+      <button onclick="document.getElementById('ckFile').click()" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;cursor:pointer">📤 Upload cookies.txt</button>
+      <button id="ckDel" onclick="delCookies()" style="display:none;background:#444;color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer">🗑 Xóa</button>
+      <span id="ckMsg" style="font-size:13px"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  $("panel-" + t.dataset.tab).classList.add("active");
+}));
+
+let pollTimer = null;
+
+function showJob(title) {
+  $("job").style.display = "block";
+  $("jobTitle").textContent = title || "Đang xử lý...";
+  $("jobBar").style.width = "0%";
+  $("jobMsg").textContent = "Đang bắt đầu...";
+  $("jobErr").style.display = "none";
+  $("jobDone").style.display = "none";
+  $("preview").style.display = "none";
+  $("job").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function pollJob(jid) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    const r = await fetch("/api/jobs/" + jid);
+    if (!r.ok) { clearInterval(pollTimer); return; }
+    const { job } = await r.json();
+    $("jobBar").style.width = job.progress + "%";
+    $("jobMsg").textContent = job.message + (job.progress ? ` (${job.progress}%)` : "");
+    if (job.title) $("jobTitle").textContent = "🎧 " + job.title;
+    if (job.status === "done") {
+      clearInterval(pollTimer);
+      $("jobBar").style.width = "100%";
+      $("jobMsg").textContent = "✅ Hoàn tất!";
+      $("jobDone").style.display = "block";
+      $("jobDl").href = "/api/download/" + encodeURIComponent(job.filename);
+      $("jobDl").setAttribute("download", job.filename);
+      const pv = $("preview");
+      pv.src = "/api/download/" + encodeURIComponent(job.filename);
+      pv.style.display = "block";
+      loadFiles();
+    } else if (job.status === "error") {
+      clearInterval(pollTimer);
+      $("jobErr").style.display = "block";
+      $("jobErr").textContent = "❌ " + (job.error || "Có lỗi xảy ra");
+    }
+  }, 1000);
+}
+
+$("urlBtn").addEventListener("click", async () => {
+  const url = $("urlInput").value.trim();
+  if (!url) { alert("Bạn hãy dán link video vào ô trên nhé."); return; }
+  const btn = $("urlBtn"); btn.disabled = true;
+  try {
+    const r = await fetch("/api/url", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+    const d = await r.json();
+    if (!d.ok) { alert(d.error || "Có lỗi xảy ra"); return; }
+    showJob("Đang xử lý link...");
+    pollJob(d.job_id);
+  } finally { btn.disabled = false; }
+});
+$("urlInput").addEventListener("keydown", e => { if (e.key === "Enter") $("urlBtn").click(); });
+
+async function uploadFile(file) {
+  if (!file) return;
+  showJob("📁 " + file.name);
+  const fd = new FormData(); fd.append("file", file);
+  const r = await fetch("/api/upload", { method: "POST", body: fd });
+  const d = await r.json();
+  if (!d.ok) {
+    $("jobErr").style.display = "block";
+    $("jobErr").textContent = "❌ " + (d.error || "Có lỗi xảy ra");
+    return;
+  }
+  pollJob(d.job_id);
+}
+
+const drop = $("drop"), fileInput = $("fileInput");
+drop.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", () => uploadFile(fileInput.files[0]));
+["dragover", "dragenter"].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.add("over");
+}));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.remove("over");
+}));
+drop.addEventListener("drop", e => uploadFile(e.dataTransfer.files[0]));
+
+function fmtDate(ts) {
+  return new Date(ts * 1000).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+async function loadFiles() {
+  const r = await fetch("/api/files");
+  const { files } = await r.json();
+  const box = $("files");
+  if (!files.length) { box.innerHTML = '<div class="empty">Chưa có file MP3 nào. Hãy chuyển đổi video đầu tiên của bạn 👆</div>'; return; }
+  box.innerHTML = "";
+  files.forEach(f => {
+    const div = document.createElement("div");
+    div.className = "file";
+    div.innerHTML = `
+      <div class="meta">
+        <div class="name" title="${f.name.replace(/"/g, "&quot;")}">🎧 ${f.name.replace(/</g, "&lt;")}</div>
+        <div class="info">${f.size_mb} MB · ${fmtDate(f.mtime)}</div>
+      </div>
+      <button class="icon-btn" title="Nghe thử">▶</button>
+      <a class="icon-btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none"
+         title="Tải xuống" href="/api/download/${encodeURIComponent(f.name)}" download>⬇</a>
+      <button class="icon-btn danger" title="Xóa">🗑</button>`;
+    const [playBtn, , delBtn] = [div.children[1], div.children[2], div.children[3]];
+    playBtn.addEventListener("click", () => {
+      const pv = $("preview");
+      pv.src = "/api/download/" + encodeURIComponent(f.name);
+      pv.style.display = "block";
+      $("job").style.display = "block";
+      $("jobTitle").textContent = "🎧 " + f.name;
+      $("jobBar").style.width = "100%";
+      $("jobMsg").textContent = "Đang phát thử...";
+      $("jobErr").style.display = "none"; $("jobDone").style.display = "none";
+      $("job").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      pv.play();
+    });
+    delBtn.addEventListener("click", async () => {
+      if (!confirm("Xóa file này?")) return;
+      await fetch("/api/files/" + encodeURIComponent(f.name), { method: "DELETE" });
+      loadFiles();
+    });
+    box.appendChild(div);
+  });
+}
+
+loadFiles();
+
+// Cookies YouTube
+async function checkCookies(){
+  const r = await fetch("/api/cookies/status");
+  const d = await r.json();
+  $("ckStatus").textContent = d.has_cookies ? "✅ đã có" : "⚠️ chưa có";
+  $("ckStatus").style.color = d.has_cookies ? "#4ade80" : "#fbbf24";
+  $("ckDel").style.display = d.has_cookies ? "" : "none";
+}
+async function uploadCookies(){
+  const f = $("ckFile").files[0];
+  if(!f) return;
+  $("ckMsg").textContent = "⏳ Đang upload...";
+  const fd = new FormData();
+  fd.append("file", f);
+  const r = await fetch("/api/cookies", {method:"POST", body:fd});
+  const d = await r.json();
+  $("ckMsg").textContent = d.ok ? "✅ " + d.message : "❌ " + (d.error||"Lỗi");
+  $("ckMsg").style.color = d.ok ? "#4ade80" : "#f87171";
+  $("ckFile").value = "";
+  checkCookies();
+}
+async function delCookies(){
+  if(!confirm("Xóa cookies YouTube?")) return;
+  await fetch("/api/cookies", {method:"DELETE"});
+  checkCookies();
+  $("ckMsg").textContent = "";
+}
+checkCookies();
+</script>
+</body>
+</html>
