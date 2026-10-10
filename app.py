@@ -126,6 +126,8 @@ def process_url(jid, url):
             "progress_hooks": [hook],
             "quiet": True, "no_warnings": True, "noplaylist": True,
             "socket_timeout": 30, "retries": 3,
+            # Vượt qua kiểm tra bot mới của YouTube (2025)
+            "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
         }
         # Dùng cookies YouTube nếu có để vượt qua kiểm tra "not a bot"
         if COOKIES_FILE.exists():
