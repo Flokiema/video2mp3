@@ -121,13 +121,11 @@ def process_url(jid, url):
                 set_job(jid, progress=72, message="Tải xong, chuẩn bị chuyển đổi...")
 
         ydl_opts = {
-            "format": "bestaudio[ext=m4a]/bestaudio/best",
+            "format": "bestaudio/best",
             "outtmpl": str(workdir / "%(title).80s [%(id)s].%(ext)s"),
             "progress_hooks": [hook],
             "quiet": True, "no_warnings": True, "noplaylist": True,
             "socket_timeout": 30, "retries": 3,
-            # Vượt qua kiểm tra bot mới của YouTube (2025)
-            "extractor_args": {"youtube": {"player_client": ["web", "android"]}},
         }
         # Dùng cookies YouTube nếu có để vượt qua kiểm tra "not a bot"
         if COOKIES_FILE.exists():
