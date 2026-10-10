@@ -99,6 +99,13 @@
       <button onclick="queueUrl()" style="background:#8b5cf6;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;cursor:pointer">📤 Gửi link</button>
     </div>
     <div id="qMsg" style="margin-top:8px;font-size:13px"></div>
+    <div id="qProg" style="display:none;margin-top:12px">
+      <div id="qTitle" style="font-weight:600;margin-bottom:6px"></div>
+      <div style="background:#0f1117;border-radius:8px;height:22px;overflow:hidden">
+        <div id="qBar" style="height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#3b82f6);border-radius:8px;transition:width .5s;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:12px;color:#fff"></div>
+      </div>
+      <div id="qStat" style="margin-top:6px;font-size:13px;color:#aaa"></div>
+    </div>
   </div>
 
   <h2 class="lib" style="margin-top:24px">🍪 Cookies YouTube <span id="ckStatus" style="font-size:13px;color:#888"></span></h2>
@@ -286,7 +293,8 @@ async function delCookies(){
 }
 checkCookies();
 
-// Queue YouTube URL for assistant download
+// Queue YouTube URL for assistant download (với thanh tiến trình)
+let qTimer = null, qId = null;
 async function queueUrl(){
   const url = $("qUrl").value.trim();
   if(!url) { $("qMsg").textContent = "Dán link YouTube vào trước nhé!"; $("qMsg").style.color = "#fbbf24"; return; }
@@ -298,9 +306,15 @@ async function queueUrl(){
     });
     const d = await r.json();
     if(d.ok){
-      $("qMsg").textContent = `✅ Đã nhận! Bạn là #${d.position} trong hàng đợi. MP3 sẽ xuất hiện trong Thư viện sau vài phút.`;
-      $("qMsg").style.color = "#4ade80";
+      qId = d.id;
+      $("qMsg").textContent = "";
+      $("qMsg").style.color = "";
       $("qUrl").value = "";
+      $("qProg").style.display = "block";
+      $("qTitle").textContent = "⏳ Đang chờ xử lý...";
+      $("qBar").style.width = "2%"; $("qBar").textContent = "";
+      $("qStat").textContent = `Vị trí #${d.position} trong hàng đợi`;
+      pollQueue();
     } else {
       $("qMsg").textContent = "❌ " + (d.error || "Lỗi");
       $("qMsg").style.color = "#f87171";
@@ -309,6 +323,33 @@ async function queueUrl(){
     $("qMsg").textContent = "❌ Không kết nối được";
     $("qMsg").style.color = "#f87171";
   }
+}
+async function pollQueue(){
+  if(qTimer) clearTimeout(qTimer);
+  if(!qId) return;
+  try{
+    const r = await fetch("https://podcast-api.michaelhienduc.workers.dev/api/queue");
+    const q = await r.json();
+    const item = q.find(x => x.id === qId);
+    if(!item){
+      // Đã xong và bị xóa khỏi queue = thành công
+      $("qBar").style.width = "100%"; $("qBar").textContent = "100%";
+      $("qTitle").textContent = "✅ Hoàn tất!";
+      $("qStat").textContent = "MP3 đã có trong Thư viện ở trên 👆 (tải lại trang nếu chưa thấy)";
+      loadFiles();
+      qId = null;
+      return;
+    }
+    const pct = item.progress || 2;
+    $("qBar").style.width = pct + "%";
+    $("qBar").textContent = pct >= 15 ? Math.round(pct) + "%" : "";
+    $("qTitle").textContent = "🎵 " + (item.title || "Đang xử lý...");
+    const stIcon = {pending:"⏳", downloading:"⬇️", converting:"🔄", uploading:"📤", error:"❌", done:"✅"}[item.status] || "⏳";
+    $("qStat").textContent = `${stIcon} ${item.message || item.status}`;
+    $("qStat").style.color = item.status === "error" ? "#f87171" : "#aaa";
+    if(item.status === "error"){ qId = null; return; }
+  }catch(e){ /* thử lại */ }
+  qTimer = setTimeout(pollQueue, 5000);
 }
 </script>
 </body>
