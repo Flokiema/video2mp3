@@ -93,7 +93,7 @@
 
   <h2 class="lib">🔗 Nhờ trợ lý tải YouTube</h2>
   <div style="background:#1a1d29;border:1px solid #2a2e42;border-radius:12px;padding:16px;font-size:14px;line-height:1.7">
-    <div>YouTube chặn server (không tải trực tiếp được). Dán link vào đây, hệ thống sẽ tự tải giúp bạn trong vài phút, MP3 sẽ xuất hiện trong <b>Thư viện MP3</b> ở trên 👆</div>
+    <div>YouTube chặn server (không tải trực tiếp được). Dán link vào đây, hệ thống sẽ tự tải, chuyển MP3 và <b>đăng thẳng lên trang podcast</b> cho bạn trong vài phút 👆<br><span style="color:#888;font-size:13px">Xem tại: <a href="https://podcast-demo-94q.pages.dev" target="_blank" style="color:#8b5cf6">podcast-demo-94q.pages.dev</a></span></div>
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
       <input type="text" id="qUrl" placeholder="Dán link YouTube..." style="flex:1;min-width:200px;background:#0f1117;border:1px solid #2a2e42;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px">
       <button onclick="queueUrl()" style="background:#8b5cf6;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;cursor:pointer">📤 Gửi link</button>
@@ -335,7 +335,7 @@ async function pollQueue(){
       // Đã xong và bị xóa khỏi queue = thành công
       $("qBar").style.width = "100%"; $("qBar").textContent = "100%";
       $("qTitle").textContent = "✅ Hoàn tất!";
-      $("qStat").textContent = "MP3 đã có trong Thư viện ở trên 👆 (tải lại trang nếu chưa thấy)";
+      $("qStat").innerHTML = 'Đã đăng lên <a href="https://podcast-demo-94q.pages.dev" target="_blank" style="color:#8b5cf6">trang podcast</a> 👆 Mở trang đó là nghe được ngay!';
       loadFiles();
       qId = null;
       return;
