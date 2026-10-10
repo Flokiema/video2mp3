@@ -91,6 +91,16 @@
   <h2 class="lib">📚 Thư viện MP3</h2>
   <div id="files"></div>
 
+  <h2 class="lib">🔗 Nhờ trợ lý tải YouTube</h2>
+  <div style="background:#1a1d29;border:1px solid #2a2e42;border-radius:12px;padding:16px;font-size:14px;line-height:1.7">
+    <div>YouTube chặn server (không tải trực tiếp được). Dán link vào đây, hệ thống sẽ tự tải giúp bạn trong vài phút, MP3 sẽ xuất hiện trong <b>Thư viện MP3</b> ở trên 👆</div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <input type="text" id="qUrl" placeholder="Dán link YouTube..." style="flex:1;min-width:200px;background:#0f1117;border:1px solid #2a2e42;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px">
+      <button onclick="queueUrl()" style="background:#8b5cf6;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;cursor:pointer">📤 Gửi link</button>
+    </div>
+    <div id="qMsg" style="margin-top:8px;font-size:13px"></div>
+  </div>
+
   <h2 class="lib" style="margin-top:24px">🍪 Cookies YouTube <span id="ckStatus" style="font-size:13px;color:#888"></span></h2>
   <div style="background:#1a1d29;border:1px solid #2a2e42;border-radius:12px;padding:16px;font-size:14px;line-height:1.7">
     <div id="ckGuide">
@@ -275,6 +285,31 @@ async function delCookies(){
   $("ckMsg").textContent = "";
 }
 checkCookies();
+
+// Queue YouTube URL for assistant download
+async function queueUrl(){
+  const url = $("qUrl").value.trim();
+  if(!url) { $("qMsg").textContent = "Dán link YouTube vào trước nhé!"; $("qMsg").style.color = "#fbbf24"; return; }
+  $("qMsg").textContent = "⏳ Đang gửi...";
+  try{
+    const r = await fetch("https://podcast-api.michaelhienduc.workers.dev/api/queue", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({url})
+    });
+    const d = await r.json();
+    if(d.ok){
+      $("qMsg").textContent = `✅ Đã nhận! Bạn là #${d.position} trong hàng đợi. MP3 sẽ xuất hiện trong Thư viện sau vài phút.`;
+      $("qMsg").style.color = "#4ade80";
+      $("qUrl").value = "";
+    } else {
+      $("qMsg").textContent = "❌ " + (d.error || "Lỗi");
+      $("qMsg").style.color = "#f87171";
+    }
+  }catch(e){
+    $("qMsg").textContent = "❌ Không kết nối được";
+    $("qMsg").style.color = "#f87171";
+  }
+}
 </script>
 </body>
 </html>
