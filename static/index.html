@@ -50,6 +50,17 @@
   .icon-btn.danger:hover { background: #742a2a; }
   .empty { color: #6b7288; text-align: center; padding: 20px; font-size: .95rem; }
   audio { width: 100%; margin-top: 12px; display: none; }
+  @media (max-width: 600px) {
+    .wrap { padding: 20px 14px 40px; }
+    h1 { font-size: 1.5rem; }
+    .sub { font-size: .85rem; margin-bottom: 20px; }
+    .card { padding: 16px; }
+    .tabs { flex-wrap: wrap; }
+    .tab { font-size: .9rem; padding: 10px; }
+    input[type=text] { font-size: 16px; /* tránh zoom trên iOS */ }
+    .drop { padding: 30px 14px; }
+    .file { flex-wrap: wrap; }
+  }
 </style>
 </head>
 <body>
